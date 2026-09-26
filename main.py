@@ -9,21 +9,31 @@ MIN_PUBLICATION_YEAR = 2000
 OUTPUT_FILE = "books.csv"
 
 
-def fetch_books():
+def fetch_books() -> list[dict]:
+    """Fetch books from the OpenLibrary API."""
     params = {
         "q": "python",
         "limit": BOOKS_COUNT,
     }
 
-    response = requests.get(API_URL, params=params, timeout=10)
-    response.raise_for_status()
+    try:
+        response = requests.get(
+            API_URL,
+            params=params,
+            timeout=10,
+        )
+        response.raise_for_status()
+
+    except requests.RequestException as error:
+        print(f"Failed to fetch books: {error}")
+        return []
 
     data = response.json()
 
     return data.get("docs", [])
 
-
-def filter_books(books):
+def filter_books(books: list[dict]) -> list[dict]:
+    """Keep books published after the minimum year."""
     filtered_books = []
 
     for book in books:
@@ -39,11 +49,12 @@ def filter_books(books):
                     "year": year,
                 }
             )
-
+    filtered_books.sort(key=lambda book: book["year"], reverse=True)
     return filtered_books
 
 
-def save_to_csv(books):
+def save_to_csv(books: list[dict]) -> None:
+    """Save books to a CSV file."""
     with open(
         OUTPUT_FILE,
         "w",
@@ -59,7 +70,7 @@ def save_to_csv(books):
         writer.writerows(books)
 
 
-def main():
+def main() -> None:
     books = fetch_books()
     filtered_books = filter_books(books)
 
